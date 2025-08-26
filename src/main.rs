@@ -16,9 +16,9 @@ struct TreeItem {
 /// Excel行数据  
 #[derive(Debug)]
 struct ExcelRow {
-    levels: Vec<String>,     // 每个层级的名称，如["src", "bin", "file.rs"]
-    full_path: String,       // 完整路径
-    max_level: usize,        // 最大层级深度
+    levels: Vec<String>, // 每个层级的名称，如["src", "bin", "file.rs"]
+    full_path: String,   // 完整路径
+    max_level: usize,    // 最大层级深度
     is_file: bool,
 }
 
@@ -53,10 +53,10 @@ impl TreeParser {
             if let Some((level, name)) = self.parse_line(line) {
                 // 清理过期的隐藏层级记录（当前层级小于等于隐藏层级时）
                 hidden_levels.retain(|&hidden_level| hidden_level < level);
-                
+
                 // 检查是否在隐藏目录内
                 let in_hidden_dir = !hidden_levels.is_empty();
-                
+
                 // 过滤隐藏目录/文件（以.开头的项目，如.git）
                 if !include_hidden && (name.starts_with('.') || in_hidden_dir) {
                     if name.starts_with('.') {
@@ -65,10 +65,10 @@ impl TreeParser {
                     }
                     continue;
                 }
-                
+
                 // 调整路径栈到当前层级
                 path_stack.truncate(level.saturating_sub(1));
-                
+
                 // 构建完整路径
                 let full_path = if path_stack.is_empty() {
                     name.clone()
@@ -94,23 +94,21 @@ impl TreeParser {
         // 重新计算统计信息（基于实际解析的内容）
         let file_count = items.iter().filter(|item| item.is_file).count();
         let dir_count = items.iter().filter(|item| !item.is_file).count();
-        
+
         let stats_text = if include_hidden {
             // 如果包含隐藏目录，使用原始统计信息（如果有的话）
-            stats_line.unwrap_or_else(|| format!("{} directories, {} files", dir_count, file_count))
+            stats_line.unwrap_or_else(|| format!("{dir_count} directories, {file_count} files"))
         } else {
             // 如果过滤了隐藏目录，使用重新计算的统计信息
-            format!("{} directories, {} files", dir_count, file_count)
+            format!("{dir_count} directories, {file_count} files")
         };
-        
+
         items.push(TreeItem {
-            name: format!("📊 统计: {}", stats_text),
+            name: format!("📊 统计: {stats_text}"),
             level: 0,
             is_file: false,
-            full_path: format!("📊 统计: {}", stats_text),
+            full_path: format!("📊 统计: {stats_text}"),
         });
-
-
 
         Ok(items)
     }
@@ -119,7 +117,9 @@ impl TreeParser {
     fn parse_line(&self, line: &str) -> Option<(usize, String)> {
         // 跳过根目录标记（可能是 "." 或项目名如 "utzip-0.9.0/"）
         let trimmed = line.trim();
-        if trimmed == "." || (trimmed.ends_with('/') && !trimmed.contains("├") && !trimmed.contains("└")) {
+        if trimmed == "."
+            || (trimmed.ends_with('/') && !trimmed.contains("├") && !trimmed.contains("└"))
+        {
             return None;
         }
 
@@ -134,16 +134,18 @@ impl TreeParser {
         // 2. "    " 模式（4个空格，用于最后的子目录）
         // 注意：tree输出可能使用不同类型的空格字符(U+0020普通空格, U+00A0非断空格)
         while pos + 3 < chars.len() {
-            if chars[pos] == '│' && 
-               chars[pos + 1].is_whitespace() && 
-               chars[pos + 2].is_whitespace() && 
-               chars[pos + 3].is_whitespace() {
+            if chars[pos] == '│'
+                && chars[pos + 1].is_whitespace()
+                && chars[pos + 2].is_whitespace()
+                && chars[pos + 3].is_whitespace()
+            {
                 level += 1;
                 pos += 4;
-            } else if chars[pos] == ' ' && 
-                      chars[pos + 1] == ' ' && 
-                      chars[pos + 2] == ' ' && 
-                      chars[pos + 3] == ' ' {
+            } else if chars[pos] == ' '
+                && chars[pos + 1] == ' '
+                && chars[pos + 2] == ' '
+                && chars[pos + 3] == ' '
+            {
                 // 支持纯空格缩进（4个空格）
                 level += 1;
                 pos += 4;
@@ -153,10 +155,11 @@ impl TreeParser {
         }
 
         // 查找并跳过tree连接符 "├──" 或 "└──"
-        if pos + 2 < chars.len() && 
-           (chars[pos] == '├' || chars[pos] == '└') &&
-           chars[pos + 1] == '─' && 
-           chars[pos + 2] == '─' {
+        if pos + 2 < chars.len()
+            && (chars[pos] == '├' || chars[pos] == '└')
+            && chars[pos + 1] == '─'
+            && chars[pos + 2] == '─'
+        {
             pos += 3;
             // 跳过可能的空格
             if pos < chars.len() && chars[pos] == ' ' {
@@ -173,7 +176,7 @@ impl TreeParser {
         }
 
         let name: String = chars[pos..].iter().collect::<String>().trim().to_string();
-        
+
         if name.is_empty() {
             None
         } else {
@@ -186,13 +189,13 @@ impl TreeParser {
         // 简单的ANSI转义序列移除
         let mut result = String::new();
         let mut chars = text.chars().peekable();
-        
+
         while let Some(ch) = chars.next() {
             if ch == '\x1b' {
                 // 跳过ANSI转义序列
                 if chars.peek() == Some(&'[') {
                     chars.next(); // 跳过 '['
-                    while let Some(c) = chars.next() {
+                    for c in chars.by_ref() {
                         if c.is_ascii_alphabetic() || c == '~' {
                             break;
                         }
@@ -213,9 +216,50 @@ impl TreeParser {
                 return dot_pos > 0 && dot_pos < name.len() - 1;
             }
         }
-        
+
         // 常见的无扩展名文件
-        matches!(name, "Cargo.lock" | "Dockerfile" | "Makefile" | "LICENSE" | "README" | "CHANGELOG")
+        matches!(
+            name,
+            "Cargo.lock" | "Dockerfile" | "Makefile" | "LICENSE" | "README" | "CHANGELOG"
+        )
+    }
+}
+
+/// Excel格式配置
+struct ExcelFormats {
+    dir_format: Format,
+    file_format: Format,
+    path_format: Format,
+    notes_format: Format,
+}
+
+impl ExcelFormats {
+    fn new() -> Self {
+        let dir_format = Format::new()
+            .set_background_color("#E8F4FD")
+            .set_border(rust_xlsxwriter::FormatBorder::Thin)
+            .set_bold()
+            .set_align(rust_xlsxwriter::FormatAlign::Center)
+            .set_align(rust_xlsxwriter::FormatAlign::VerticalCenter);
+
+        let file_format = Format::new()
+            .set_background_color("#F0F8E8")
+            .set_border(rust_xlsxwriter::FormatBorder::Thin);
+
+        let path_format = Format::new()
+            .set_background_color("#FFFEF7")
+            .set_border(rust_xlsxwriter::FormatBorder::Thin);
+
+        let notes_format = Format::new()
+            .set_background_color("#F5F5F5")
+            .set_border(rust_xlsxwriter::FormatBorder::Thin);
+
+        Self {
+            dir_format,
+            file_format,
+            path_format,
+            notes_format,
+        }
     }
 }
 
@@ -234,7 +278,11 @@ impl ExcelGenerator {
 
         // 转换为Excel行数据（先转换以获取max_level）
         let rows = self.convert_to_rows(items);
-        let max_level = if rows.is_empty() { 1 } else { rows[0].max_level };
+        let max_level = if rows.is_empty() {
+            1
+        } else {
+            rows[0].max_level
+        };
 
         // 设置标题和格式
         self.setup_worksheet(worksheet, max_level)?;
@@ -243,8 +291,9 @@ impl ExcelGenerator {
         self.write_data(worksheet, &rows)?;
 
         // 保存文件
-        workbook.save(output_path)
-            .with_context(|| format!("无法保存Excel文件: {}", output_path))?;
+        workbook
+            .save(output_path)
+            .with_context(|| format!("无法保存Excel文件: {output_path}"))?;
 
         Ok(())
     }
@@ -259,20 +308,20 @@ impl ExcelGenerator {
 
         // 动态生成表头
         let mut col = 0;
-        
+
         // 层级列：L1, L2, L3, ...
         for level in 1..=max_level {
-            let header = format!("L{}", level);
+            let header = format!("L{level}");
             worksheet.write_with_format(0, col as u16, &header, &header_format)?;
-            worksheet.set_column_width(col as u16, 20.0)?;  // 层级列宽度
+            worksheet.set_column_width(col as u16, 20.0)?; // 层级列宽度
             col += 1;
         }
-        
-                    // 完整路径列
-            worksheet.write_with_format(0, col as u16, "完整路径", &header_format)?;
-            worksheet.set_column_width(col as u16, 60.0)?;  // 增加宽度以适应长路径和统计信息
+
+        // 完整路径列
+        worksheet.write_with_format(0, col as u16, "完整路径", &header_format)?;
+        worksheet.set_column_width(col as u16, 60.0)?; // 增加宽度以适应长路径和统计信息
         col += 1;
-        
+
         // 备注列
         worksheet.write_with_format(0, col as u16, "备注", &header_format)?;
         worksheet.set_column_width(col as u16, 30.0)?;
@@ -284,9 +333,10 @@ impl ExcelGenerator {
     fn convert_to_rows(&self, items: Vec<TreeItem>) -> Vec<ExcelRow> {
         let mut rows = Vec::new();
         let mut path_stack: Vec<String> = Vec::new();
-        
+
         // 首先找出最大层级深度
-        let max_level = items.iter()
+        let max_level = items
+            .iter()
             .filter(|item| !item.name.starts_with("📊"))
             .map(|item| item.level)
             .max()
@@ -297,7 +347,7 @@ impl ExcelGenerator {
             if item.name.starts_with("📊") {
                 let mut levels = vec!["".to_string(); max_level];
                 levels[0] = item.name.clone();
-                
+
                 rows.push(ExcelRow {
                     levels,
                     full_path: item.name.clone(),
@@ -337,26 +387,9 @@ impl ExcelGenerator {
         }
 
         let max_level = rows[0].max_level;
-        
-        // 格式定义
-        let dir_format = Format::new()
-            .set_background_color("#E8F4FD")
-            .set_border(rust_xlsxwriter::FormatBorder::Thin)
-            .set_bold()
-            .set_align(rust_xlsxwriter::FormatAlign::Center)
-            .set_align(rust_xlsxwriter::FormatAlign::VerticalCenter);
 
-        let file_format = Format::new()
-            .set_background_color("#F0F8E8")
-            .set_border(rust_xlsxwriter::FormatBorder::Thin);
-
-        let path_format = Format::new()
-            .set_background_color("#FFFEF7")
-            .set_border(rust_xlsxwriter::FormatBorder::Thin);
-
-        let notes_format = Format::new()
-            .set_background_color("#F5F5F5")
-            .set_border(rust_xlsxwriter::FormatBorder::Thin);
+        // 创建格式配置
+        let formats = ExcelFormats::new();
 
         let stats_format = Format::new()
             .set_background_color("#FFE4E1")
@@ -369,7 +402,7 @@ impl ExcelGenerator {
         // 分离统计行和数据行
         let mut data_rows = Vec::new();
         let mut stats_rows = Vec::new();
-        
+
         for row in rows {
             if row.levels[0].starts_with("📊") {
                 stats_rows.push(row);
@@ -379,23 +412,25 @@ impl ExcelGenerator {
         }
 
         // 写入数据行，实现层级合并单元格
-        self.write_data_with_merging(worksheet, &data_rows, max_level, &dir_format, &file_format, &path_format, &notes_format, &mut current_row)?;
+        self.write_data_with_merging(worksheet, &data_rows, max_level, &formats, &mut current_row)?;
 
         // 记录stats行数量，避免所有权问题
         let stats_count = stats_rows.len();
-        
+
         // 写入统计行
         for stats_row in stats_rows {
             let total_cols = max_level + 2;
-            
+
             // 设置统计行行高为20
             worksheet.set_row_height(current_row, 20.0)?;
-            
+
             worksheet.merge_range(
-                current_row, 0,
-                current_row, (total_cols - 1) as u16,
+                current_row,
+                0,
+                current_row,
+                (total_cols - 1) as u16,
                 &stats_row.levels[0],
-                &stats_format
+                &stats_format,
             )?;
             current_row += 1;
         }
@@ -406,7 +441,12 @@ impl ExcelGenerator {
         // 自动筛选
         if !data_rows.is_empty() {
             let total_cols = max_level + 2;
-            worksheet.autofilter(0, 0, (data_rows.len() + stats_count) as u32, (total_cols - 1) as u16)?;
+            worksheet.autofilter(
+                0,
+                0,
+                (data_rows.len() + stats_count) as u32,
+                (total_cols - 1) as u16,
+            )?;
         }
 
         Ok(())
@@ -418,10 +458,7 @@ impl ExcelGenerator {
         worksheet: &mut Worksheet,
         rows: &[&ExcelRow],
         max_level: usize,
-        dir_format: &Format,
-        file_format: &Format,
-        path_format: &Format,
-        notes_format: &Format,
+        formats: &ExcelFormats,
         current_row: &mut u32,
     ) -> Result<()> {
         if rows.is_empty() {
@@ -431,14 +468,14 @@ impl ExcelGenerator {
         // 先写入所有单元格内容
         for (row_idx, row) in rows.iter().enumerate() {
             let row_num = *current_row + row_idx as u32;
-            
+
             // 层级列：写入每个层级的内容
             for (level_idx, level_name) in row.levels.iter().enumerate() {
                 if !level_name.is_empty() {
                     let format = if row.is_file && level_idx == row.levels.len() - 1 {
-                        file_format
+                        &formats.file_format
                     } else {
-                        dir_format
+                        &formats.dir_format
                     };
                     worksheet.write_with_format(row_num, level_idx as u16, level_name, format)?;
                 }
@@ -446,16 +483,22 @@ impl ExcelGenerator {
 
             // 完整路径列
             let path_col = max_level as u16;
-            worksheet.write_with_format(row_num, path_col, &row.full_path, path_format)?;
+            worksheet.write_with_format(row_num, path_col, &row.full_path, &formats.path_format)?;
 
             // 备注列
             let notes_col = max_level as u16 + 1;
-            worksheet.write_with_format(row_num, notes_col, "", notes_format)?;
+            worksheet.write_with_format(row_num, notes_col, "", &formats.notes_format)?;
         }
 
         // 然后实现合并单元格逻辑
         for level_idx in 0..max_level {
-            self.merge_level_column(worksheet, rows, level_idx, *current_row, dir_format)?;
+            self.merge_level_column(
+                worksheet,
+                rows,
+                level_idx,
+                *current_row,
+                &formats.dir_format,
+            )?;
         }
 
         *current_row += rows.len() as u32;
@@ -474,7 +517,7 @@ impl ExcelGenerator {
         let mut i = 0;
         while i < rows.len() {
             let current_value = &rows[i].levels[level_idx];
-            
+
             // 跳过空值
             if current_value.is_empty() {
                 i += 1;
@@ -488,7 +531,7 @@ impl ExcelGenerator {
                 if rows[j].levels[level_idx] != *current_value {
                     break;
                 }
-                
+
                 // 检查前面的层级是否也相同（重要：确保是同一个父目录下）
                 let mut same_parent = true;
                 for prev_level in 0..level_idx {
@@ -497,11 +540,11 @@ impl ExcelGenerator {
                         break;
                     }
                 }
-                
+
                 if !same_parent {
                     break;
                 }
-                
+
                 j += 1;
             }
 
@@ -509,12 +552,14 @@ impl ExcelGenerator {
             if j - i > 1 {
                 let start_merge_row = start_row + i as u32;
                 let end_merge_row = start_row + (j - 1) as u32;
-                
+
                 worksheet.merge_range(
-                    start_merge_row, level_idx as u16,
-                    end_merge_row, level_idx as u16,
+                    start_merge_row,
+                    level_idx as u16,
+                    end_merge_row,
+                    level_idx as u16,
                     current_value,
-                    dir_format
+                    dir_format,
                 )?;
             }
 
@@ -534,7 +579,7 @@ fn main() -> Result<()> {
                 .short('i')
                 .long("input")
                 .value_name("FILE")
-                .help("输入文件路径（tree命令输出）")
+                .help("输入文件路径（tree命令输出）"),
         )
         .arg(
             Arg::new("output")
@@ -542,26 +587,26 @@ fn main() -> Result<()> {
                 .long("output")
                 .value_name("FILE")
                 .help("输出Excel文件路径")
-                .default_value("tree_output.xlsx")
+                .default_value("tree_output.xlsx"),
         )
         .arg(
             Arg::new("include_hidden")
                 .short('a')
                 .long("include-hidden")
                 .action(clap::ArgAction::SetTrue)
-                .help("包含隐藏目录/文件（以.开头的项目，如.git）")
+                .help("包含隐藏目录/文件（以.开头的项目，如.git）"),
         )
         .get_matches();
 
     // 读取输入
     let input_content = if let Some(input_file) = matches.get_one::<String>("input") {
-        println!("📖 读取tree输出文件: {}", input_file);
-        fs::read_to_string(input_file)
-            .with_context(|| format!("无法读取文件: {}", input_file))?
+        println!("📖 读取tree输出文件: {input_file}");
+        fs::read_to_string(input_file).with_context(|| format!("无法读取文件: {input_file}"))?
     } else {
         println!("📖 从标准输入读取tree输出（Ctrl+D结束）:");
         let mut buffer = String::new();
-        io::stdin().read_to_string(&mut buffer)
+        io::stdin()
+            .read_to_string(&mut buffer)
             .context("无法从标准输入读取")?;
         buffer
     };
@@ -574,22 +619,24 @@ fn main() -> Result<()> {
     } else {
         println!("🔄 解析tree结构（默认忽略.git等隐藏目录）...");
     }
-    
+
     // 解析tree输出
     let parser = TreeParser::new();
-    let items = parser.parse(&input_content, include_hidden)
+    let items = parser
+        .parse(&input_content, include_hidden)
         .context("解析tree输出失败")?;
 
     println!("📊 找到 {} 个文件/目录", items.len());
 
     // 生成Excel
-    println!("📝 生成Excel文件: {}", output_path);
+    println!("📝 生成Excel文件: {output_path}");
     let generator = ExcelGenerator::new();
-    generator.generate(items, output_path)
+    generator
+        .generate(items, output_path)
         .context("生成Excel文件失败")?;
 
     println!("✅ 完成！Excel文件已保存");
-    
+
     Ok(())
 }
 
@@ -600,7 +647,7 @@ mod tests {
     #[test]
     fn test_parse_line() {
         let parser = TreeParser::new();
-        
+
         let test_cases = vec![
             ("├── src", Some((1, "src".to_string()))),
             ("│   ├── main.rs", Some((2, "main.rs".to_string()))),
@@ -609,7 +656,7 @@ mod tests {
 
         for (input, expected) in test_cases {
             let result = parser.parse_line(input);
-            assert_eq!(result, expected, "Failed for input: {}", input);
+            assert_eq!(result, expected, "Failed for input: {input}");
         }
     }
 }

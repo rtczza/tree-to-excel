@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/rtczza/tree-to-excel"
+keywords = ["cli", "tree", "excel"]
+authors = ["rtczza<rtczza@gmail.com>"]
+description = "tool that converts the output of tree commands into Excel tables."
+categories = ["command-line-utilities"]
 
 [dependencies]
 # Excel文件处理
