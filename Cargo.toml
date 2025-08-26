@@ -2,6 +2,8 @@
 name = "tree-to-excel"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/rtczza/tree-to-excel"
 
 [dependencies]
 # Excel文件处理
