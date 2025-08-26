@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/rtczza/tree-to-excel"
 keywords = ["cli", "tree", "excel"]
-authors = ["rtczza<rtczza@gmail.com>"]
+authors = ["rtczza<rtczza@163.com>"]
 description = "tool that converts the output of tree commands into Excel tables."
 categories = ["command-line-utilities"]
 
